@@ -4,11 +4,22 @@ var wampio = require('wamp.io'),
     dnode = require('dnode');
 
 
+var program = require('commander');
+
+program
+  .version('0.0.1')
+  .option('-w, --wsport <n>', 'Set WebSocket listen port', parseInt)
+  .option('-d, --dnodeport <n>', 'Set dnode listen port', parseInt)
+  .option('-e, --echo', 'Only echo every WebSocket message. Using for benchmarking.')
+  .parse(process.argv);
+
+
 // ----- Base HTTP server + static content -----
 var server = connect()
     .use(connect.static(__dirname + '/public'))
-    .listen(9000);
-console.log('Socket server listening on 9000.')
+    .listen(program.wsport || 9000);
+console.log('Socket server listening on '+(program.wsport || 9000))
+if (program.echo) console.log('WARNING: starting in echo mode for benchmarking, all other functions are disabled.');
 
 // ----- WAMP server -----
 var wamp = new wampio.Server();
@@ -19,8 +30,14 @@ var sockjsServer = sockjs.createServer({
 wamp.clientsByAlias = {};
 sockjsServer.installHandlers(server);
 sockjsServer.on('connection', function (client) {
+    
     client.send = client.write;
     client.on('data', function (data) {
+        if (program.echo) {
+            client.write(data);
+            return;
+        }
+
         client.emit('message', data);
 
         // TODO ukladat PubSub eventy do monga nebo posilat do PHP
@@ -30,7 +47,7 @@ sockjsServer.on('connection', function (client) {
     });
 
     client.rooms = {};
-    wamp.onConnection(client);
+    // wamp.onConnection(client);
 });
 
 // ----- dNode server -----
@@ -56,8 +73,8 @@ var dnodeServer = dnode(function (remote, conn) {
         callback();
     };
 });
-dnodeServer.listen(7070);
-console.log('DNode server listening on 7070.')
+dnodeServer.listen(program.dnodeport || 7070);
+console.log('DNode server listening on '+(program.dnodeport || 7070))
 
 
 // FUKNCE BROKERU
@@ -69,7 +86,7 @@ console.log('DNode server listening on 7070.')
 // - vsechna RPC volani z klienta predat pres DNode do PHP a vysledek zpet (spustit php dnode server pres commandlinu)
 // - vsechny publish eventy od vsech klientu predavat do PHP (spoustet PHP skript pres commandlinu) - DAVKOVE??? - nebo jen ukladat do monga??
 // - spravuje seznam mistnosti a klientu v nich, informuje ostatni klienty o pripojeni/odpojeni ostatnich klientu
-
+// TODO pres commander prijimat cisla portu a konekci k databazi
 
 var rooms = {};
 wamp.on('call', function (procUri, args, cb, client) {
