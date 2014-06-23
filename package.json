@@ -4,13 +4,15 @@
   "description": "Server daemon part of PHPsock library which mediates WebSocket communication between JS clients and PHP server.",
   "main": "broker",
   "dependencies": {
+    "commander": "~2.2.0",
     "connect": "~2.13.0",
     "dnode": "~1.2.0",
+    "mongodb": "^1.4.6",
+    "mongojs": "^0.13.0",
     "sockjs": "~0.3.8",
     "wamp.io": "git+https://github.com/dvorakjan/wamp.io.git",
-    "ws": "~0.4.31",
     "when": "~2.8.0",
-    "commander": "~2.2.0"
+    "ws": "~0.4.31"
   },
   "devDependencies": {},
   "repository": {
