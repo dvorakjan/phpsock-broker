@@ -1,83 +1,78 @@
-var wampio = require('wamp.io'),
-    sockjs = require('sockjs'),
+var wampio  = require('wamp.io'),
+    sockjs  = require('sockjs'),
     connect = require('connect'),
-    dnode = require('dnode');
+    dnode   = require('dnode'),
+    bunyan  = require('bunyan'),
+    program = require('commander'),
+    config  = require('nconf');
 
-
-var program = require('commander');
-
+// for --help output only - all config is parsed using "config" object
 program
   .version('0.0.1')
-  .option('-w, --wsport <n>', 'Set WebSocket listen port', parseInt)
+  .option('-w, --wsport <n>',    'Set WebSocket listen port', parseInt)
   .option('-d, --dnodeport <n>', 'Set dnode listen port', parseInt)
-  .option('-e, --echo', 'Only echo every WebSocket message. Using for benchmarking.')
+  .option('-e, --echo',          'Only echo every WebSocket message. Using for benchmarking.')
   .parse(process.argv);
 
+// compose config object using various sources
+config
+    .argv()
+    .env()
+    .file('custom', {file: 'custom/config.json'})
+    .file({file: 'defaults.json'})
+    .defaults({'wsport':9000, 'dnodeport': 7070});
 
-// ----- Komponenty reagujici na udalosti WS a dNode serveru -----
-// TODO components vyseknout ven a udelat funkcionalne
-var chat        = require('./components/chat.js');
-var chatHistory = require('./components/chatHistory.js');
-var components  = {
-    list: [chat, chatHistory],
-    emit: function() {
-        for (var i in this.list) {
-            this.list[i].emit.apply(this.list[i], arguments);
-        }
-    },
-    on: function(evt, callback) {
-        for (var i in this.list) {
-            this.list[i].on(evt, callback);
-        }
-    }
-};
+// output log in structured JSON format (in CLI use "node broker.js | bunyan")
+var logger = bunyan.createLogger({name: "broker"});
 
+// load components according to config
+var components = require('./components').load(config);
 
-// ----- Base HTTP server + static content -----
+// base HTTP server + static content
 var server = connect()
     .use(connect.static(__dirname + '/public'))
-    .listen(program.wsport || 9000);
+    .listen(config.get('wsport'));
 
-console.log('Socket server listening on '+(program.wsport || 9000));
-if (program.echo) console.log('WARNING: starting in echo mode for benchmarking, all other functions are disabled.');
+logger.info('Socket server listening on '+(config.get('wsport')));
+if (config.get('echo')) logger.warn('WARNING: starting in echo mode for benchmarking, all other functions are disabled.');
 
 
-// ----- WAMP server -----
+// WAMP + SockJS server
 var wamp = new wampio.Server();
 var sockjsServer = sockjs.createServer({
-    prefix: '/broadcast',
+    prefix: '',
     sockjs_url: '/sockjs-0.3.js',
     log : function(){}
 });
 sockjsServer.installHandlers(server);
 sockjsServer.on('connection', function (client) {
-    // Nekompatibilni rozhrani mezi WS a SOCKJS - nutne prekonvertovat 
+    // TODO auth
+    // client.close(1,'neser');
+
+    // manual mapping for incopatible WS <--> SOCKJS interface
     client.send = client.write;
     client.on('data', function (data) {
-        if (program.echo) {
+        if (config.echo) {
             client.write(data);
             return;
         }
-
         client.emit('message', data);
     });
     client.on('end', function () {
         components.emit('disconnect', client);
     });
-
     wamp.onConnection(client);
-
     components.emit('connect', wamp, client);
 });
 
-
-// ----- dNode server -----
+// dNode server for connections from other languages than node.js
 var dnodeServer = dnode(function (remote, conn) {
     this.getOnlineClients = function (callback) {
         callback(Object.keys(chat.clientsByAlias))
     };
 
     this.callClient = function (alias, procedure, params, callback) {
+        // console.log('dnode rx callClient', alias, procedure)
         if (alias in chat.clientsByAlias) {
             for (var i in chat.clientsByAlias[alias]) {
                 chat.clientsByAlias[alias][i].call(procedure, params, function (res) {
@@ -94,20 +89,18 @@ var dnodeServer = dnode(function (remote, conn) {
         callback();
     };
 });
-dnodeServer.listen(program.dnodeport || 7070);
-console.log('DNode server listening on '+(program.dnodeport || 7070))
+dnodeServer.listen(config.get('dnodeport'));
+logger.info('DNode server listening on '+config.get('dnodeport'))
 
-
-// ----- Redirect all RPC calls to chat -----
-wamp.on('call', function (procUri, args, cb, client) {
+// redirect all RPC calls to components
+wamp.on('call', function (procUri, args, cb, client, aa) {
     components.emit.apply(components, [procUri, client, cb].concat(args));
 });
 
-// ----- Events to call from components -----
+// events to call from components
 components.on('call',function(client, method, args, callback){
     client.call(method, args, callback);
 });
-
 components.on('publish',function(topic, args){
     wamp.publish(topic, args);
 });
