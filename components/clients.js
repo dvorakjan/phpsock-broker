@@ -1,10 +1,10 @@
-module.exports = users = new (require( "events" ).EventEmitter)();
+module.exports = clients = new (require( "events" ).EventEmitter)();
 
-users.clients = {};
-users.clientsByAlias = {};
+clients.clients = {};
+clients.clientsByAlias = {};
 
 // --------------------------------------------
-users.on('connect', function(wamp, client) {
+clients.on('connect', function(wamp, client) {
 	this.wamp = wamp;
 	this.clients[client.id] = client;
 
@@ -12,7 +12,7 @@ users.on('connect', function(wamp, client) {
 })
 
 // --------------------------------------------
-users.on('disconnect', function(client) {
+clients.on('disconnect', function(client) {
 	delete this.clients[client.id];
 
 	// foreach connected clients list and remove that who has disconnected
@@ -32,7 +32,7 @@ users.on('disconnect', function(client) {
 })
 
 // --------------------------------------------
-users.on('registerUsername', function(client, callback, alias, domain) {
+clients.on('registerUsername', function(client, callback, alias, domain) {
 	this.clients[client.id].alias = alias;
     this.clients[client.id].uri   = domain;
 

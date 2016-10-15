@@ -1,5 +1,9 @@
 {
   "components": {
-    "components/users.js": {}
+    "components/clients.js": {},
+    "components/auth.js": {},
+    "components/dnode.js": {
+      "port": 7070
+    }
   }
 }

@@ -1,7 +1,6 @@
 var wampio  = require('wamp.io'),
     sockjs  = require('sockjs'),
     connect = require('connect'),
-    dnode   = require('dnode'),
     bunyan  = require('bunyan'),
     program = require('commander'),
     config  = require('nconf');
@@ -25,9 +24,6 @@ config
 // output log in structured JSON format (in CLI use "node broker.js | bunyan")
 var logger = bunyan.createLogger({name: "broker"});
 
-// load components according to config
-var components = require('./components').load(config);
-
 // base HTTP server + static content
 var server = connect()
     .use(connect.static(__dirname + '/public'))
@@ -36,18 +32,28 @@ var server = connect()
 logger.info('Socket server listening on '+(config.get('wsport')));
 if (config.get('echo')) logger.warn('WARNING: starting in echo mode for benchmarking, all other functions are disabled.');
 
-
-// WAMP + SockJS server
+// create WAMP + SockJS server (we use prefix for auth token)
 var wamp = new wampio.Server();
 var sockjsServer = sockjs.createServer({
-    prefix: '',
+    prefix: '/[a-z0-9]*',
     sockjs_url: '/sockjs-0.3.js',
     log : function(){}
 });
 sockjsServer.installHandlers(server);
+
+// load and init components according to config
+var manager = require('./components/manager').load(config).register(wamp);
+
 sockjsServer.on('connection', function (client) {
-    // TODO auth
-    // client.close(1,'neser');
+    // check validity of auth token from connection URL prefix
+    var auth      = manager.getComponent('components/auth.js');
+    var authToken = client.url.split('/')[1];
+    if (!auth.validateToken(authToken)) {
+        logger.error('invalid token ', authToken);
+        client.close(0, 'invalid auth token');
+    } else {
+        logger.info('valid token ', authToken);
+    }
 
     // manual mapping for incopatible WS <--> SOCKJS interface
     client.send = client.write;
@@ -58,49 +64,11 @@ sockjsServer.on('connection', function (client) {
         }
         client.emit('message', data);
     });
-    client.on('end', function () {
-        components.emit('disconnect', client);
-    });
     wamp.onConnection(client);
-    components.emit('connect', wamp, client);
-});
 
-// dNode server for connections from other languages than node.js
-var dnodeServer = dnode(function (remote, conn) {
-    this.getOnlineClients = function (callback) {
-        callback(Object.keys(chat.clientsByAlias))
-    };
-
-    this.callClient = function (alias, procedure, params, callback) {
-        // console.log('dnode rx callClient', alias, procedure)
-        if (alias in chat.clientsByAlias) {
-            for (var i in chat.clientsByAlias[alias]) {
-                chat.clientsByAlias[alias][i].call(procedure, params, function (res) {
-                    callback(res);
-                })
-            }
-        } else {
-            callback();
-        }
-    };
-
-    this.publish = function (topic, message, callback) {
-        wamp.publish(topic, message);
-        callback();
-    };
-});
-dnodeServer.listen(config.get('dnodeport'));
-logger.info('DNode server listening on '+config.get('dnodeport'))
-
-// redirect all RPC calls to components
-wamp.on('call', function (procUri, args, cb, client, aa) {
-    components.emit.apply(components, [procUri, client, cb].concat(args));
-});
-
-// events to call from components
-components.on('call',function(client, method, args, callback){
-    client.call(method, args, callback);
-});
-components.on('publish',function(topic, args){
-    wamp.publish(topic, args);
+    // pass connect and disconnect events to components manager
+    manager.emit('connect', wamp, client);
+    client.on('end', function () {
+        manager.emit('disconnect', client);
+    });
 });
