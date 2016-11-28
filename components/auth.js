@@ -17,14 +17,16 @@ auth.on('load', function(){
     setInterval(function(){
         auth.cleanTokens();
     }, 60*1000);
-
-    this.logger.info('stored tokens', this.tokens);
 });
 
 // check if token is in stored tokens array
 auth.validateToken = function(token) {
     var validTokens = Object.keys(this.tokens);
     return validTokens.indexOf(token) >= 0;
+}
+
+auth.getToken = function(token) {
+    return this.tokens[token];
 }
 
 // load from persistent storage
@@ -50,14 +52,14 @@ auth.cleanTokens = function() {
 }
 
 // add new token to collection with actual time for later expiration check and save to persistent storage
-auth.addToken = function(token) {
-    this.logger.info('adding token ', token);
-    this.tokens[token] = {
-        timeAdded: (new Date().getTime())
-    };
-    this.saveTokens();
+auth.addToken = function(token, details) {
+    details = details || {};
+    details.timeAdded = new Date().getTime();
 
-    this.logger.info('stored tokens', this.tokens);
+    this.logger.info('adding token ', token, details);
+
+    this.tokens[token] = details;
+    this.saveTokens();
 }
 
 

@@ -11,6 +11,7 @@ dnode.on('load', function(manager) {
         };
 
         this.callClient = function (alias, procedure, params, callback) {
+            dnode.logger.info(alias, procedure, params, callback);
             if (alias in clients.clientsByAlias) {
                 dnode.logger.info('recieved call '+procedure+' for '+ alias + ' - sending to '+clients.clientsByAlias[alias].length+' clients');
                 for (var i in clients.clientsByAlias[alias]) {
@@ -19,13 +20,13 @@ dnode.on('load', function(manager) {
                     })
                 }
             } else {
-                dnode.logger.info('recieved call '+procedure+' for '+ alias + ' - nobody to recieve :-(');
+                dnode.logger.info('recieved call '+procedure+' for '+ alias + ' with params '+params+'- nobody to recieve :-(');
                 callback();
             }
         };
 
-        this.authToken = function(token, callback) {
-            manager.getComponent('components/auth.js').addToken(token);
+        this.authToken = function(token, tokenDetails, callback) {
+            manager.getComponent('components/auth.js').addToken(token, tokenDetails);
             callback();
         }
 

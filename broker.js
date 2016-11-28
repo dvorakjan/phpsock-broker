@@ -53,6 +53,7 @@ sockjsServer.on('connection', function (client) {
         client.close(0, 'invalid auth token');
     } else {
         logger.info('valid token ', authToken);
+        client.authToken = authToken;
     }
 
     // manual mapping for incopatible WS <--> SOCKJS interface
