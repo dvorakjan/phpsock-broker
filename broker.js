@@ -3,8 +3,7 @@ var wampio  = require('wamp.io'),
     connect = require('connect'),
     bunyan  = require('bunyan'),
     program = require('commander'),
-    config  = require('nconf'),
-    https   = require('https');
+    config  = require('nconf');
 
 // for --help output only - all config is parsed using "config" object
 program
@@ -26,11 +25,9 @@ config
 var logger = bunyan.createLogger({name: "broker"});
 
 // base HTTP server + static content
-var options = {};
-var server = https.createServer(
-    options,
-    connect().use(connect.static(__dirname + '/public'))
-).listen(config.get('wsport'));
+var server = connect()
+    .use(connect.static(__dirname + '/public'))
+    .listen(config.get('wsport'));
 
 logger.info('Socket server listening on '+(config.get('wsport')));
 if (config.get('echo')) logger.warn('WARNING: starting in echo mode for benchmarking, all other functions are disabled.');

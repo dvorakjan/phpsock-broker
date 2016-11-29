@@ -5,4 +5,3 @@ logs
 *.log
 custom
 .idea
-.node-persist
