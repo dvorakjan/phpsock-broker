@@ -1,3 +1,3 @@
 #!/bin/sh
 
-tail -500f /var/log/phpsock-broker/forever.log | bunyan
+tail -500f $PHPSOCK_LOGS/forever.log | bunyan
