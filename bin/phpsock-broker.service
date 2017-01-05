@@ -1,0 +1,17 @@
+[Unit]
+Description=Phpsock library server daemon
+
+[Service]
+ExecStart=/usr/bin/node broker.js
+WorkingDirectory=/home/phpsock
+Restart=always
+RestartSec=5
+StartLimitInterval=0
+Environment=ENV=production
+User=nginx
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=phpsock
+
+[Install]
+WantedBy=multi-user.target
