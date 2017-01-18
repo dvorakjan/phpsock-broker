@@ -6,8 +6,19 @@ dnode.on('load', function(manager) {
     var clients = manager.getComponent('components/clients.js');
 
     this.server = require('dnode')(function (remote, conn) {
+        var methods = this;
+
         this.getOnlineClients = function (callback) {
             callback(Object.keys(clients.clientsByAlias))
+        };
+
+        this.callClients = function(aliases, procedure, params, callback) {
+            console.log('aliases', aliases);
+            for (var i in aliases) {
+                // TODO call callback when all clients done
+                methods.callClient(aliases[i], procedure, params, function(){})
+            }
+            callback();
         };
 
         this.callClient = function (alias, procedure, params, callback) {
@@ -28,7 +39,7 @@ dnode.on('load', function(manager) {
         this.authToken = function(token, tokenDetails, callback) {
             manager.getComponent('components/auth.js').addToken(token, tokenDetails);
             callback();
-        }
+        };
 
         this.publish = function (topic, message, callback) {
             dnode.logger.info('publishing topic '+topic);
