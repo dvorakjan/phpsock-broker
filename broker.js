@@ -9,7 +9,6 @@ var wampio  = require('wamp.io'),
 program
   .version('0.0.1')
   .option('-w, --wsport <n>',    'Set WebSocket listen port', parseInt)
-  .option('-d, --dnodeport <n>', 'Set dnode listen port', parseInt)
   .option('-e, --echo',          'Only echo every WebSocket message. Using for benchmarking.')
   .parse(process.argv);
 
@@ -19,7 +18,7 @@ config
     .env()
     .file('custom', {file: 'custom/config.json'})
     .file({file: 'defaults.json'})
-    .defaults({'wsport':9000, 'dnodeport': 7070});
+    .defaults({'wsport':9001});
 
 // output log in structured JSON format (in CLI use "node broker.js | bunyan")
 var logger = bunyan.createLogger({name: "broker"});

@@ -1,4 +1,5 @@
 {
+  "wsport": 9001,	
   "components": {
     "components/clients.js": {},
     "components/auth.js": {
