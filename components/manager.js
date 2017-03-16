@@ -14,7 +14,7 @@ module.exports = {
         }
     },
 
-    // for each component in config require its module, init logger and add to collection
+    // for each component in config require its module, init logger and add it to collection
     load: function(config) {
 
         for (var path in config.get('components')) {
