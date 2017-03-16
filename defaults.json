@@ -1,7 +1,9 @@
 {
   "components": {
     "components/clients.js": {},
-    "components/auth.js": {},
+    "components/auth.js": {
+      "persistTokens": false
+    },
     "components/dnode.js": {
       "port": 7070
     }

@@ -1,11 +1,13 @@
 module.exports = auth = new (require("events").EventEmitter)();
 
 auth.on('load', function(){
-    this.storage = require('node-persist');
-    this.storage.initSync();
+    if (this.config.persistTokens) {
+        this.storage = require('node-persist');
+        this.storage.initSync();
 
-    // initial load after server restart
-    this.loadTokens();
+        // initial load after server restart
+        this.loadTokens();
+    }
 
     // init tokens object when nothing loaded from persistent storage
     if (typeof this.tokens == 'undefined') {
@@ -36,7 +38,9 @@ auth.loadTokens = function() {
 
 // persist tokens to persistent storage
 auth.saveTokens = function() {
-    this.storage.setItemSync('tokens', this.tokens);
+    if (this.config.persistTokens) {
+        this.storage.setItemSync('tokens', this.tokens);
+    }
 }
 
 // clean tokend added more than five hours ago
