@@ -12,6 +12,21 @@ dnode.on('load', function(manager) {
             callback(Object.keys(clients.clientsByAlias))
         };
 
+        this.callClient = function (alias, procedure, params, callback) {
+            dnode.logger.info(alias, procedure, params, callback);
+            if (alias in clients.clientsByAlias) {
+                dnode.logger.info('recieved call '+procedure+' for '+ alias + ' - sending to '+clients.clientsByAlias[alias].length+' clients');
+                for (var i in clients.clientsByAlias[alias]) {
+                    clients.clientsByAlias[alias][i].call(procedure, params, function (res) {
+                        callback && callback(res);
+                    })
+                }
+            } else {
+                dnode.logger.info('recieved call '+procedure+' for '+ alias + ' with params '+params+'- nobody to recieve :-(');
+                callback && callback();
+            }
+        };
+
         this.callClients = function(aliases, procedure, params, callback) {
             console.log('aliases', aliases);
             for (var i in aliases) {
@@ -19,21 +34,6 @@ dnode.on('load', function(manager) {
                 methods.callClient(aliases[i], procedure, params, function(){})
             }
             callback();
-        };
-
-        this.callClient = function (alias, procedure, params, callback) {
-            dnode.logger.info(alias, procedure, params, callback);
-            if (alias in clients.clientsByAlias) {
-                dnode.logger.info('recieved call '+procedure+' for '+ alias + ' - sending to '+clients.clientsByAlias[alias].length+' clients');
-                for (var i in clients.clientsByAlias[alias]) {
-                    clients.clientsByAlias[alias][i].call(procedure, params, function (res) {
-                        callback(res);
-                    })
-                }
-            } else {
-                dnode.logger.info('recieved call '+procedure+' for '+ alias + ' with params '+params+'- nobody to recieve :-(');
-                callback();
-            }
         };
 
         this.authToken = function(token, tokenDetails, callback) {
