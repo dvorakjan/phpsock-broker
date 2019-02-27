@@ -1,11 +1,11 @@
 {
-  "wsport": 9001,	
+  "wsport": 9001,
   "components": {
-    "components/clients.js": {},
-    "components/auth.js": {
+    "components/clients": {},
+    "components/auth": {
       "persistTokens": false
     },
-    "components/dnode.js": {
+    "components/dnode": {
       "port": 7070
     }
   }
