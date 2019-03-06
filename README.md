@@ -10,5 +10,5 @@ Server daemon part of PHPsock library which mediates WebSocket communication bet
 
 ## TODO
 
-- [ ] 🔐 SECURITY: separate clients by domain and somehow block cross-domain calls
+- [ ] 🔐 SECURITY: separate clients by domain and somehow block cross-domain calls (instead of current `domain#...` prefixes)
 - [ ] 💅 REFACTORING: work with `clientsByAlias` in some more simple and functional way

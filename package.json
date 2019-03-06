@@ -17,7 +17,7 @@
     "sockjs": "~0.3.8",
     "wamp.io": "git+https://github.com/dvorakjan/wamp.io.git",
     "when": "~2.8.0",
-    "ws": "~0.4.31"
+    "ws": "^1.1.1"
   },
   "devDependencies": {
     "@types/jest": "^23.3.10",
