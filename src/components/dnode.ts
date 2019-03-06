@@ -22,6 +22,7 @@ export default class DNode extends Component {
   public onLoad() {
     const clients: Clients = this.manager.getComponent('components/clients') as Clients
     const manager = this.manager
+    const logger = this.logger
 
     this.server = require('dnode')(function(remote, conn) {
       this.getOnlineClients = callback => {
@@ -29,9 +30,9 @@ export default class DNode extends Component {
       }
 
       this.callClient = (alias, procedure, params, callback) => {
-        this.logger.info(alias, procedure, params, callback)
+        logger.info(alias, procedure, params, callback)
         if (alias in clients.clientsByAlias) {
-          this.logger.info(
+          logger.info(
             'recieved call ' +
               procedure +
               ' for ' +
@@ -46,7 +47,7 @@ export default class DNode extends Component {
             })
           }
         } else {
-          this.logger.info(
+          logger.info(
             'recieved call ' +
               procedure +
               ' for ' +
@@ -60,7 +61,7 @@ export default class DNode extends Component {
       }
 
       this.callClients = (aliases, procedure, params, callback) => {
-        this.logger.log('aliases', aliases)
+        logger.info('aliases', aliases)
         for (const i in aliases) {
           // TODO call callback when all clients done
           this.callClient(aliases[i], procedure, params, () => {})
@@ -75,7 +76,7 @@ export default class DNode extends Component {
       }
 
       this.publish = (topic, message, callback) => {
-        this.logger.info('publishing topic ' + topic)
+        logger.info('publishing topic ' + topic)
         manager.getWamp().publish(topic, message)
         callback()
       }

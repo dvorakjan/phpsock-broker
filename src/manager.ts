@@ -5,11 +5,13 @@ export default class Manager {
   private components: Component[] = []
 
   public emit(event, ...args) {
-    this.components.forEach(component => component.emit.apply(component, [event, ...args]))
+    Object.entries(this.components).forEach(([, component]) =>
+      component.emit.apply(component, [event, ...args])
+    )
   }
 
   public on(event, callback) {
-    this.components.forEach(component => component.on(event, callback))
+    Object.entries(this.components).forEach(([, component]) => component.on(event, callback))
   }
 
   public load(nconf) {
@@ -20,9 +22,8 @@ export default class Manager {
       const logger = require('bunyan').createLogger({ name: path })
       logger.info('loading component ' + path)
 
-      this.components.push(new ComponentClass(this, logger, config))
+      this.components[path] = new ComponentClass(this, logger, config)
     }
-
     this.emit('load')
 
     return this
